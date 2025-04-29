@@ -1,0 +1,27 @@
+<% layout('/layouts/boilerplate')%>  
+<!-- it helps to avoid the repetition of the content till body tag  -->
+<body>
+    <h1>All Listings</h1>
+    <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1">  
+        <!-- It is custom design It means that one row contains 3 cards min at large screen size -->
+        <% for(let i of allListings){%>
+            
+            <div class="card col">
+                <a href="/listings/<%=i._id%>" class="listing-link">
+                <img src="<%=i.image%>" class="card-img-top" alt="listing_image" style="height: 20rem;"/>
+                 <div class="card-img-overlay"></div>    <!--IT IS predefined class that makes any text to appear on the card */ -->
+                <div class="card-body">
+                  <h5 class="card-title">Card title</h5>
+                  <p class="card-text">
+                    <b><%= i.title %><br></b>
+                    &#8377;<%= i.price.toLocaleString("en-IN") %>/night
+                </p>
+                  <a href="#" class="btn btn-primary">Go somewhere</a>
+                </div>
+              </div>
+            </a>
+
+         <% } %>
+    </div>
+</body>
+</html>
