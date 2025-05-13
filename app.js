@@ -1,21 +1,73 @@
+if(process.env.NODE_ENV!="production")
+{
+require('dotenv').config();
+}
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const methodOverride = require('method-override');
 const { v4: uuidv4 } = require('uuid');
 const path=require("path")  
-const Listing = require("./models/listing.js");
 const ejsMate = require('ejs-mate');
-const wrapAsync=require('./utils/wrapAsync.js')
 const ExpressError=require('./utils/ExpressError.js')
+const listingRouter=require("./routes/listing.js")
+const reviewsRouter=require("./routes/review.js")
+const userRouter=require("./routes/user.js")
+const session=require("express-session")
+const MongoStore = require('connect-mongo');
+const flash = require('connect-flash');
+const passport=require("passport")
+const User=require("./models/user.js")
+const LocalStrategy=require("passport-local")
+
+const dburl=process.env.ATLASDB_URL
+
+const store=MongoStore.create({
+  mongoUrl:dburl,
+  crypto: {
+    secret: process.env.SECRET
+  },
+  touchAfter:24*3600
+})
+
+store.on("error",()=>{
+  console.log("Error in mongo Session",err)
+})
+
+const sessionOptions={
+  store,
+  secret:process.env.SECRET,
+  resave: false,
+  saveUninitialized: true,
+  cookie:{
+    expires:Date.now()+7*24*60*60*1000,//after one week from now
+    maxAge:7*24*60*60*1000 ,
+    httpOnly:true
+}
+}
+
 
 
 app.set("view engine","ejs")
 app.set("views",path.join(__dirname,"views"))
 app.use(express.static(path.join(__dirname,"public")))
 app.use(express.urlencoded({extended:true}))
+app.use(express.json()); // <-- needed for raw JSON
 app.use(methodOverride('_method'));// for using patch in html
 app.engine('ejs', ejsMate);
+
+app.use(session(sessionOptions))
+app.use(flash()); 
+
+app.use(passport.initialize())
+app.use(passport.session())
+passport.use(new LocalStrategy(User.authenticate()))
+
+passport.serializeUser(User.serializeUser())
+passport.deserializeUser(User.deserializeUser())
+
+
+
 main()
   .then(() => {
     console.log("Connection Successful");  // Logs success if the connection works
@@ -24,7 +76,7 @@ main()
     console.log("Connection Error:", err);  // Logs any connection error
   });
     async function main() {
-    await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');  // Connects to the "test" database
+    await mongoose.connect(dburl);  // Connects to the "test" database
   
   }
 
@@ -33,90 +85,42 @@ app.get('/', (req, res) => {
     res.send("Server is running");
 });
 
-// Index Route
-app.get('/listings', wrapAsync(async(req,res)=>{
-    const allListings= await Listing.find({})
-    //console.log(allListings);
-    res.render("listings/index",{allListings})
-}))
 
-
-//New Route
-app.get("/listings/new",(req,res)=>{
-  res.render("listings/neww")
-
+app.use((req,res,next)=>{
+  res.locals.msg=req.flash("success")
+  res.locals.err=req.flash("error")
+  res.locals.currUser=req.user; //becuase we cannot directly use user object in ejs // This gives the info of user in a current session
+  next();
 })
 
-//Show Route
-app.get('/listings/:id',wrapAsync(async (req,res)=>{
-  let {id}=req.params
-  let listing = await Listing.findById(id);
-  res.render('listings/show',{listing})
-}))
 
-//new route
-app.post('/listings', wrapAsync(async (req,res,next)=>{
-  let {title,description,price,location,country}=req.body
-   const newListing=new Listing({
-    title:title,
-    description:description,
-    price:price,
-    location:location,
-    country:country
-   })
-  await newListing.save()
-  res.redirect("/listings")
-}))
+app.get("/demouser",async(req,res)=>{
+  let fakeuser=new User({
+    email:"student1@gmail.com",
+    username:"Student1"
+  })
 
-//Edit ROUTE
-app.get('/listings/:id/edit',wrapAsync(async (req,res)=>{
-  let {id}=req.params
-  let listing = await Listing.findById(id);
-  res.render("listings/editt",{listing})
-}))
-
-app.patch('/listings/:id',async (req,res)=>{
-  let {id}=req.params
-  let {title,description,price,location,country}=req.body
-  await Listing.findByIdAndUpdate(
-    id,
-    { title, description, price, location, country },
-    { new: true, runValidators: true }
-  );
- res.redirect('/listings')
+  let userRegistered=await User.register(fakeuser,"helloworld")
+  res.send(userRegistered)
 })
 
-//Delete Route
-
-app.delete('/listings/:id', wrapAsync(async (req, res) => {
-  let { id } = req.params;
-    await Listing.findByIdAndDelete(id);
-    res.redirect('/listings');
-}));
-
-// app.all("*",(req,res,next)=>{
-//   next(new ExpressError(400,"Page Not Found!!"))
-// })
+app.use("/listings",listingRouter)
+app.use("/listings/:id/reviews",reviewsRouter)
+app.use("/",userRouter)
 
 
-// app.use((err,req,res,next)=>{
-//   let {statusCode=500,message="error"}=err
-//   res.status(statusCode).send(message)
-//   // res.send("error")
- 
-// })
 
-// 3. Catch-all route for undefined paths (404)
-app.all("*", (req, res, next) => {
+
+// Error is comming bye this(idk whyyyyyyyyy)
+app.all('/{*any}', (req, res, next) => {
   next(new ExpressError(404, "Page Not Found!!"));
 });
 
 // 4. Error-handling middleware
 app.use((err, req, res, next) => {
-  const { status = 500, message = "Something went wrong" } = err;
-  res.status(status).send(message);
+const { status = 500, message = "Something went wrong" } = err;
+ res.status(status).render("error.ejs",{err})
 });
-
 
 app.listen(8081, () => {
     console.log("Listening");
