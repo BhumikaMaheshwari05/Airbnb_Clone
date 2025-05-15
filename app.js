@@ -81,9 +81,9 @@ main()
   }
 
 app.get('/', (req, res) => {
-    console.log("Working");
-    res.send("Server is running");
+    res.redirect('/listings');
 });
+
 
 
 app.use((req,res,next)=>{
