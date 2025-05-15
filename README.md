@@ -46,14 +46,18 @@ A full-stack web application that mimics Airbnb’s core functionalities. Users 
    
 3. Set up environment variables:
    Create a .env file in the root directory with the following content:
+   
    PORT=8081
    DB_URL=mongodb://localhost:27017/homistay
    SECRET=yourSessionSecret
    
-4. Start the server:
+5. Start the server:
+   ```bash
+ 
    npm start
-   
-5. Open your browser and navigate to:
+
+
+7. Open your browser and navigate to:
    http://localhost:8081
 
 ## Usage
