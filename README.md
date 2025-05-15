@@ -63,10 +63,16 @@ A full-stack web application that mimics Airbnb’s core functionalities. Users 
    http://localhost:8081
 
 ## Usage
+
 -Register a new account or log in to start browsing and managing listings.
+
 -Use filters to search for properties by type or location.
+
 -Add new property listings with images and details.
+
 -Edit or delete your own listings.
+
 -View detailed information for each property, including pricing and location
+
 
 For any questions or support, please reach out to bhumika.maheshwari29@gmail.com.
