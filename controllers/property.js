@@ -27,35 +27,41 @@ module.exports.showProperty=async (req,res)=>{
 const geocode = require('../utils/geocode');
 
 module.exports.addProperty = async (req, res, next) => {
-    let url = req.file.path;
-    let filename = req.file.filename;
-    let { title, description, price, location, country } = req.body;
+    try {
+        let url = req.file.path;
+        let filename = req.file.filename;
+        let { title, description, price, location, country } = req.body;
 
-    // Get coordinates for the location
-    const coords = await geocode(location);
-    
-    if (!coords) {
-        req.flash('error', 'Could not find location on map. Please check your location.');
-        return res.redirect('back');
+        // Get coordinates for the location
+        const coords = await geocode(location);
+
+        if (!coords) {
+            req.flash('error', 'Could not find location on map. Please check your location.');
+
+            // Redirect safely: if referer exists, redirect there; otherwise, fallback to /listings
+            return res.redirect(req.get('referer') || '/listings');
+        }
+
+        const newListing = new Listing({
+            title,
+            description,
+            price,
+            location,
+            country,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            image: { url, filename }
+        });
+
+        newListing.owner = req.user._id;
+
+        await newListing.save();
+
+        req.flash('success', 'New Listing Created');
+        res.redirect('/listings');
+    } catch (err) {
+        next(err);
     }
-
-    const newListing = new Listing({
-        title: title,
-        description: description,
-        price: price,
-        location: location,
-        country: country,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        image: { url, filename }
-    });
-
-    newListing.owner = req.user._id;
-
-    await newListing.save();
-
-    req.flash('success', 'New Listing Created');
-    res.redirect('/listings');
 };
 
 
