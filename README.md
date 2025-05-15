@@ -48,7 +48,9 @@ A full-stack web application that mimics Airbnb’s core functionalities. Users 
    Create a .env file in the root directory with the following content:
    
    -PORT=8081
+   
    -DB_URL=mongodb://localhost:27017/homistay
+   
    -SECRET=yourSessionSecret
    
 5. Start the server:
