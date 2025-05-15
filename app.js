@@ -110,12 +110,6 @@ app.use("/",userRouter)
 
 
 
-
-// Error is comming bye this(idk whyyyyyyyyy)
-app.all('/{*any}', (req, res, next) => {
-  next(new ExpressError(404, "Page Not Found!!"));
-});
-
 // 4. Error-handling middleware
 app.use((err, req, res, next) => {
 const { status = 500, message = "Something went wrong" } = err;
